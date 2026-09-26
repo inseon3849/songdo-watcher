@@ -1,0 +1,44 @@
+name: Tennis Court Watcher
+
+on:
+  schedule:
+    # 5분마다 실행 (GitHub 서버 사정에 따라 몇 분 늦게 시작될 수 있음)
+    - cron: "*/5 * * * *"
+  workflow_dispatch:
+    # Actions 탭에서 수동으로도 실행해볼 수 있게 해줌
+
+permissions:
+  contents: write  # notified.json 파일을 저장소에 다시 커밋하기 위해 필요
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 저장소 코드 가져오기
+        uses: actions/checkout@v4
+
+      - name: 파이썬 설치
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: 패키지 설치
+        run: |
+          pip install -r requirements.txt
+          playwright install --with-deps chromium
+
+      - name: 코트 확인 실행
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          RUN_ONCE: "1"
+        run: python watcher_v2.py
+
+      - name: 알림 기록 저장 (변경된 경우에만 커밋)
+        run: |
+          git config user.name "tennis-watcher-bot"
+          git config user.email "actions@github.com"
+          git add notified.json
+          git diff --cached --quiet || git commit -m "update notified list"
+          git push
