@@ -7,15 +7,6 @@ watcher_v2.py
 기존 watcher.py는 건드리지 않고 완전히 새로 작성한 버전이며,
 config.py와 telegram_bot.py는 기존 그대로 재사용한다.
 
-기존 watcher.py 대비 바뀐 점:
-- 조건 없는 고정 wait_for_timeout(500) 등을 최대한 없애고,
-  실제로 화면이 바뀔 때까지만 기다리는 조건 기반 대기 사용
-- 달력에 이미 표시되는 "N/8 예약 가능" 뱃지를 먼저 읽어서,
-  뱃지가 없거나(아직 오픈 안 됨) 0/8인 날짜는 아예 들어가지 않고 건너뜀
-- 코트 진입을 목록의 실제 텍스트("9번 코트")로 정확히 찾아서 클릭
-  (화면 버튼 순서에 의존하지 않음)
-- 로그인 불필요 (읽기 전용 확인이라 기존과 동일)
-
 실행:
     python watcher_v2.py
 """
@@ -414,10 +405,11 @@ def run_once(page):
 
         already_notified.update(new_items)
 
-        save_notified(already_notified)
-
     else:
         print("새로운 빈자리 없음.")
+
+    # 빈자리를 못 찾았어도 매번 파일을 저장해서, git add가 항상 파일을 찾게 함
+    save_notified(already_notified)
 
 
 # ============================================================
