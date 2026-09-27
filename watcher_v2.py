@@ -353,6 +353,19 @@ def check_court(page, court_no):
         if month_idx > 0:
             move_to_next_month(page)
 
+            # 다음 달로 넘어간 직후, 새 달의 날짜 뱃지가 로딩될 시간을 대기
+            # (이게 없으면 아직 안 채워진 빈 화면을 읽어서 0개로 잘못 나올 수 있음)
+            try:
+                page.locator(
+                    "button[data-date-key] span[title]"
+                ).first.wait_for(state="visible", timeout=10000)
+            except:
+                pass
+
+            # 위 대기가 "이전 달의 남은 뱃지"를 보고 통과했을 수도 있어
+            # 안전하게 0.5초 더 대기
+            page.wait_for_timeout(500)
+
         candidates = get_candidate_dates(page)
 
         print(
