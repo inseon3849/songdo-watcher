@@ -173,21 +173,20 @@ def go_back_to_court_list(page):
 
 def get_current_calendar_month(page):
 
-    buttons = page.locator("button")
+    try:
+        el = page.get_by_text(
+            re.compile(r"\d{4}년\s*\d{1,2}월")
+        ).first
 
-    for i in range(buttons.count()):
+        text = el.inner_text(timeout=5000)
 
-        try:
-            text = buttons.nth(i).inner_text().strip()
-        except:
-            continue
+        match = re.search(r"(\d{4})년\s*(\d{1,2})월", text)
 
-        if "년" in text and "월" in text:
+        if match:
+            return int(match.group(1)), int(match.group(2))
 
-            match = re.search(r"(\d{4})년\s*(\d{1,2})월", text)
-
-            if match:
-                return int(match.group(1)), int(match.group(2))
+    except:
+        pass
 
     return None
 
