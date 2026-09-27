@@ -196,17 +196,24 @@ def move_to_next_month(page):
 
     before = get_current_calendar_month(page)
 
-    page.get_by_label("다음 달").click()
+    for retry in range(3):
 
-    # 표시된 년/월 텍스트가 실제로 바뀔 때까지 대기 (최대 5초, 200ms 간격)
-    for _ in range(25):
+        page.get_by_label("다음 달").click()
 
-        current = get_current_calendar_month(page)
+        # 표시된 년/월 텍스트가 실제로 바뀔 때까지 대기
+        # (GitHub Actions 서버는 로컬보다 느릴 수 있어 넉넉하게: 최대 10초, 250ms 간격)
+        for _ in range(40):
 
-        if current and current != before:
-            return
+            current = get_current_calendar_month(page)
 
-        page.wait_for_timeout(200)
+            if current and current != before:
+                return
+
+            page.wait_for_timeout(250)
+
+        print(f"  (다음 달 이동 재시도 {retry + 1}/3 — 아직 {before}에 머물러있음)")
+
+    print("  경고: 다음 달로 이동하지 못했습니다. 이번 달만 확인됩니다.")
 
 
 # ============================================================
@@ -277,7 +284,6 @@ def click_date(page, date_key):
 
     # 이 사이트는 날짜 전환 시 별도 네트워크 요청이 없어서
     # networkidle 대기만으로는 화면(Vue) 갱신 전에 읽어버릴 수 있음.
-    # cart_bot.py에서 검증된 0.4초 고정 대기를 같이 넣어준다.
     try:
         page.wait_for_load_state("networkidle", timeout=3000)
     except:
@@ -331,6 +337,15 @@ def check_court(page, court_no):
     wait_and_close_popups(page, timeout=3000)
 
     enter_court_by_number(page, court_no)
+
+    # 코트 진입 직후 날짜 뱃지("4/8" 같은 것)가 로딩될 시간을 명시적으로 대기
+    # (CI 환경이 느리면 이게 없어서 첫 달이 항상 0개로 잘못 읽힐 수 있음)
+    try:
+        page.locator("button[data-date-key] span[title]").first.wait_for(
+            state="visible", timeout=10000
+        )
+    except:
+        pass
 
     found_all = []
 
