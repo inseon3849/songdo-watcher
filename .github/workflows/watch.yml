@@ -2,13 +2,14 @@ name: Tennis Court Watcher
 
 on:
   schedule:
-    # 5분마다 실행 (GitHub 서버 사정에 따라 몇 분 늦게 시작될 수 있음)
-    - cron: "*/5 * * * *"
+    # 5분마다 실행, 단 정각(0,5,10...)이 아니라 2분 오프셋(2,7,12...)으로
+    # 실행시켜서 GitHub 전체가 몰리는 정각 타이밍을 살짝 피함
+    - cron: "2,7,12,17,22,27,32,37,42,47,52,57 * * * *"
   workflow_dispatch:
     # Actions 탭에서 수동으로도 실행해볼 수 있게 해줌
 
 permissions:
-  contents: write  # notified.json 파일을 저장소에 다시 커밋하기 위해 필요
+  contents: write  # last_checked.txt 파일을 저장소에 다시 커밋하기 위해 필요
 
 jobs:
   check:
@@ -35,14 +36,13 @@ jobs:
           RUN_ONCE: "1"
         run: python watcher_v2.py
 
-      - name: 알림 기록 저장 (변경된 경우에만 커밋)
+      - name: 마지막 확인 시각 기록 (GitHub의 60일 비활성 자동중지를 방지)
+        run: date -u +"%Y-%m-%d %H:%M:%S UTC" > last_checked.txt
+
+      - name: 변경 사항 커밋
         run: |
           git config user.name "tennis-watcher-bot"
           git config user.email "actions@github.com"
-          if [ -f notified.json ]; then
-            git add notified.json
-            git diff --cached --quiet || git commit -m "update notified list"
-            git push
-          else
-            echo "notified.json 파일이 없어서 커밋을 건너뜁니다."
-          fi
+          git add last_checked.txt
+          git diff --cached --quiet || git commit -m "update check log"
+          git push

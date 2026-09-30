@@ -1,8 +1,8 @@
 """
 watcher_v2.py
 
-송도테니스 8~14번 코트의 '주말(토/일) 06:00-08:00, 20:00-22:00' 빈자리를
-감시해서 텔레그램으로 알려주는 스크립트.
+송도테니스 5~14번 코트의 빈자리를 감시해서 텔레그램으로 알려주는 스크립트.
+(확인할 때마다 그 순간 비어있는 모든 자리를 매번 알림 — 중복 방지 없음)
 
 기존 watcher.py는 건드리지 않고 완전히 새로 작성한 버전이며,
 config.py와 telegram_bot.py는 기존 그대로 재사용한다.
@@ -12,7 +12,6 @@ config.py와 telegram_bot.py는 기존 그대로 재사용한다.
 """
 
 import os
-import json
 import re
 import time
 from datetime import date
@@ -27,7 +26,7 @@ from telegram_bot import send_message
 # 설정
 # ============================================================
 
-TARGET_COURTS = [8, 9, 10, 11, 12, 13, 14]
+TARGET_COURTS = [5, 6, 7, 8, 9, 10, 11, 12, 13, 14]
 
 # 평일(월~금)은 저녁만, 주말(토/일)은 아침+저녁 둘 다 확인
 WEEKDAY_TIMES = ["20:00 - 22:00"]
@@ -39,31 +38,8 @@ MONTHS_TO_CHECK = 2
 # 확인 주기 (초). 로컬 PC에서 계속 돌릴 때만 사용됨.
 CHECK_INTERVAL_SECONDS = 300
 
-# 이미 알림 보낸 항목을 파일로 저장 (GitHub Actions는 매번 새로 실행되므로
-# 메모리가 아니라 파일에 기록해야 다음 실행에서도 중복 알림을 막을 수 있음)
-NOTIFIED_FILE = "notified.json"
-
 # 환경변수 RUN_ONCE=1이면 한 번만 확인하고 종료 (GitHub Actions용)
 RUN_ONCE = os.environ.get("RUN_ONCE") == "1"
-
-
-def load_notified():
-    if not os.path.exists(NOTIFIED_FILE):
-        return set()
-    try:
-        with open(NOTIFIED_FILE, "r", encoding="utf-8") as f:
-            data = json.load(f)
-        return set(tuple(item) for item in data)
-    except:
-        return set()
-
-
-def save_notified(notified_set):
-    with open(NOTIFIED_FILE, "w", encoding="utf-8") as f:
-        json.dump(sorted(list(notified_set)), f, ensure_ascii=False, indent=2)
-
-
-already_notified = load_notified()
 
 
 # ============================================================
@@ -412,16 +388,11 @@ def run_once(page):
             except:
                 pass
 
-    new_items = [
-        item for item in all_found
-        if item not in already_notified
-    ]
+    if all_found:
 
-    if new_items:
+        lines = ["🎾 현재 빈자리 목록"]
 
-        lines = ["🎾 빈자리 발견!"]
-
-        for court_no, date_key, target_time in new_items:
+        for court_no, date_key, target_time in all_found:
             lines.append(f"- {court_no}번 코트 {date_key} {target_time}")
 
         message = "\n".join(lines)
@@ -430,13 +401,8 @@ def run_once(page):
 
         send_message(message)
 
-        already_notified.update(new_items)
-
     else:
-        print("새로운 빈자리 없음.")
-
-    # 빈자리를 못 찾았어도 매번 파일을 저장해서, git add가 항상 파일을 찾게 함
-    save_notified(already_notified)
+        print("빈자리 없음.")
 
 
 # ============================================================
