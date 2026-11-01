@@ -32,6 +32,10 @@ TARGET_COURTS = [5, 6, 7, 8, 9, 10, 11, 12, 13, 14]
 WEEKDAY_TIMES = ["20:00 - 22:00"]
 WEEKEND_TIMES = ["06:00 - 08:00", "20:00 - 22:00"]
 
+# 아래 코트들은 월~토에 오전 시간대도 추가로 확인 (일요일은 제외)
+MORNING_COURTS = [12, 13, 14]
+MORNING_TIMES = ["08:00 - 10:00", "10:00 - 12:00"]
+
 # 앞으로 몇 개월치를 확인할지 (현재 달 포함)
 MONTHS_TO_CHECK = 2
 
@@ -197,7 +201,7 @@ def move_to_next_month(page):
 # 평일/주말 여부는 여기서 같이 판별해서 반환한다.
 # ============================================================
 
-def get_candidate_dates(page):
+def get_candidate_dates(page, court_no):
 
     candidates = []  # [(date_key, [체크할 시간대들]), ...]
 
@@ -218,9 +222,13 @@ def get_candidate_dates(page):
         except:
             continue
 
-        target_times = (
+        target_times = list(
             WEEKEND_TIMES if weekday in (5, 6) else WEEKDAY_TIMES
         )
+
+        # 12~14번 코트는 월~토(일요일 제외) 오전 시간대도 확인
+        if court_no in MORNING_COURTS and weekday != 6:
+            target_times += MORNING_TIMES
 
         # 날짜 버튼 안에는 span이 2개 있음: 날짜 숫자용, 뱃지("4/8")용.
         # 뱃지에만 title 속성("4/8 예약 가능")이 있어서 그걸로 정확히 구분한다.
@@ -342,7 +350,7 @@ def check_court(page, court_no):
             # 안전하게 0.5초 더 대기
             page.wait_for_timeout(500)
 
-        candidates = get_candidate_dates(page)
+        candidates = get_candidate_dates(page, court_no)
 
         print(
             f"  ({month_idx + 1}번째 달) 확인 대상 날짜 "
