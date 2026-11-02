@@ -12,6 +12,11 @@ on:
 permissions:
   contents: write  # last_checked.txt 파일을 저장소에 다시 커밋하기 위해 필요
 
+# 이전 실행이 아직 돌고 있으면 새 실행은 끝날 때까지 대기 (동시에 두 개가 돌지 않게)
+concurrency:
+  group: tennis-watcher
+  cancel-in-progress: false
+
 jobs:
   check:
     runs-on: ubuntu-latest
