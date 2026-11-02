@@ -2,7 +2,7 @@ name: Tennis Court Watcher
 
 on:
   # GitHub 자체 예약(schedule)은 몇 시간씩 밀려서 사용하지 않음.
-  # 대신 cron-job.org가 10분마다(한국 01:00~04:59 제외) 이 워크플로를 실행시킴.
+  # 대신 cron-job.org가 20분마다(한국 01:00~04:59 제외) 이 워크플로를 실행시킴.
   # Actions 탭에서 수동 실행(Run workflow)도 가능.
   workflow_dispatch:
 
