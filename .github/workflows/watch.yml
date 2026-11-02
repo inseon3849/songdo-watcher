@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write  # last_checked.txt 파일을 저장소에 다시 커밋하기 위해 필요
+  contents: read  # 코드만 읽으면 됨 (커밋 안 함)
 
 # 이전 실행이 아직 돌고 있으면 새 실행은 끝날 때까지 대기 (동시에 두 개가 돌지 않게)
 concurrency:
@@ -38,14 +38,3 @@ jobs:
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
           RUN_ONCE: "1"
         run: python watcher_v2.py
-
-      - name: 마지막 확인 시각 기록 (GitHub의 60일 비활성 자동중지를 방지)
-        run: date -u +"%Y-%m-%d %H:%M:%S UTC" > last_checked.txt
-
-      - name: 변경 사항 커밋
-        run: |
-          git config user.name "tennis-watcher-bot"
-          git config user.email "actions@github.com"
-          git add last_checked.txt
-          git diff --cached --quiet || git commit -m "update check log"
-          git push
